@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inspection Report — Landscape (One Defect per Page)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      color: #1a1a1a;
+      background: #c8c8c8;
+    }
+
+    /* ── Page — landscape A4 (297 × 210 mm) ─────────────────────────────── */
+    .page {
+      width: 297mm;
+      height: 210mm;
+      background: #fff;
+      margin: 16px auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 3px 16px rgba(0,0,0,.22);
+      overflow: hidden;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page {
+        width: 100%;
+        height: 100vh;
+        margin: 0;
+        box-shadow: none;
+        page-break-after: always;
+      }
+      .page:last-child { page-break-after: auto; }
+      .no-print { display: none !important; }
+    }
+
+    @page { size: A4 landscape; margin: 0; }
+
+    /* ── Top header bar ──────────────────────────────────────────────────── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1a3a5c;
+      color: #fff;
+      padding: 5px 14px;
+      flex-shrink: 0;
+    }
+    .hdr-left  { display: flex; align-items: center; gap: 8px; }
+    .hdr-brand { font-size: 11pt; font-weight: 700; letter-spacing: .02em; }
+    .hdr-sub   { font-size: 7pt; opacity: .7; letter-spacing: .06em; text-transform: uppercase; }
+    .hdr-part-info {
+      display: flex; gap: 18px; align-items: center;
+      font-size: 8pt;
+    }
+    .hdr-item { display: flex; flex-direction: column; align-items: center; }
+    .hdr-item .hi-label { font-size: 6.5pt; opacity: .65; text-transform: uppercase; letter-spacing: .05em; }
+    .hdr-item .hi-val   { font-weight: 700; font-size: 8.5pt; }
+    .hdr-right { text-align: right; font-size: 7.5pt; opacity: .8; }
+
+    /* ── Defect title bar ────────────────────────────────────────────────── */
+    .defect-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: #f0f4f8;
+      border-bottom: 2px solid #1a3a5c;
+      padding: 5px 14px;
+      flex-shrink: 0;
+    }
+    .def-id   { font-size: 14pt; font-weight: 700; color: #1a3a5c; }
+    .def-type { font-size: 11pt; font-weight: 600; color: #1a3a5c; flex: 1; }
+    .def-status {
+      font-size: 8pt; font-weight: 700; padding: 3px 10px; border-radius: 3px;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .st-pending  { background: #fff3cd; color: #856404; }
+    .st-accepted { background: #d4edda; color: #155724; }
+    .st-scrap    { background: #f8d7da; color: #721c24; }
+    .st-mrb      { background: #e2d9f3; color: #4a235a; }
+
+    /* ── Main body: photo left, info right ───────────────────────────────── */
+    .page-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Photo pane — takes up 58% of width */
+    .photo-pane {
+      width: 58%;
+      background: #111a24;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      border-right: 3px solid #1a3a5c;
+      position: relative;
+    }
+    .photo-pane img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 3px;
+    }
+    .photo-placeholder {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; color: #445566;
+      font-size: 9pt;
+    }
+    .photo-placeholder .ph-icon { font-size: 36pt; opacity: .4; }
+    .photo-id-stamp {
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(0,0,0,.72); color: #fff;
+      font-size: 11pt; font-weight: 700; font-family: monospace;
+      padding: 3px 10px; border-radius: 3px;
+    }
+
+    /* Info pane — takes up 42% */
+    .info-pane {
+      width: 42%;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 12px;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* Measurements */
+    .section-label {
+      font-size: 6.5pt; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #888;
+      border-bottom: 1px solid #dde2ea;
+      padding-bottom: 2px; margin-bottom: 6px; margin-top: 6px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .meas-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    .meas-cell {
+      background: #f4f7fb;
+      border-radius: 3px;
+      padding: 4px 6px;
+    }
+    .mc-label { font-size: 6pt; color: #999; text-transform: uppercase; letter-spacing: .04em; }
+    .mc-val   { font-size: 10pt; font-weight: 700; color: #1a1a1a; }
+
+    .notes-line {
+      font-size: 8pt; color: #555;
+      padding: 3px 2px;
+      border-top: 1px solid #f0f0f0;
+      margin-top: 2px;
+    }
+    .notes-line span { font-weight: 600; color: #333; }
+
+    /* Disposition history */
+    .disp-table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+    .disp-table td { font-size: 7.5pt; padding: 3px 4px; border-bottom: 1px solid #f4f4f4; vertical-align: top; }
+    .disp-table tr:last-child td { border-bottom: none; }
+    .disp-pill {
+      display: inline-block;
+      font-size: 6.5pt; font-weight: 700; padding: 1px 6px; border-radius: 2px;
+      white-space: nowrap; text-transform: uppercase;
+    }
+    .dp-USE_AS_IS     { background: #d4edda; color: #155724; }
+    .dp-REWORK        { background: #cce5ff; color: #004085; }
+    .dp-MRB_SUBMITTED { background: rgba(159,122,234,.18); color: #6b46c1; }
+    .dp-MRB_CTP       { background: rgba(159,122,234,.32); color: #553c9a; }
+    .dp-MRB_ACCEPTED  { background: rgba(128,90,213,.38);  color: #44337a; }
+    .dp-VOID          { background: #e2e3e5; color: #383d41; }
+    .dp-REPAIR        { background: #fff3cd; color: #856404; }
+    .dp-SCRAP         { background: #f8d7da; color: #721c24; }
+    .dp-PENDING       { background: #fff3cd; color: #856404; }
+    .disp-note-td { color: #444; line-height: 1.35; }
+    .disp-ts-td   { color: #aaa; white-space: nowrap; font-size: 7pt; }
+
+    /* Active disposition highlight */
+    .disp-active-row { background: #f8fffe; }
+
+    /* ── Footer ─────────────────────────────────────────────────────────── */
+    .page-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      border-top: 1px solid #dde2ea;
+      padding: 3px 14px;
+      font-size: 7pt; color: #aaa;
+      flex-shrink: 0;
+    }
+    .footer-confidential { color: #b00; font-weight: 700; text-transform: uppercase; font-size: 6.5pt; letter-spacing: .05em; }
+
+    /* ── Photo-only continuation page (Option C) ────────────────────────── */
+
+    /* Wide photo pane — 85% width for continuation pages */
+    .photo-pane-wide {
+      width: 85%;
+      background: #111a24;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      border-right: 3px solid #1a3a5c;
+      position: relative;
+    }
+    .photo-pane-wide img {
+      max-width: 100%; max-height: 100%;
+      object-fit: contain; border-radius: 3px;
+    }
+
+    /* Thin right strip — 15% width */
+    .info-strip {
+      width: 15%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 8px;
+      background: #f4f7fb;
+      text-align: center;
+      gap: 10px;
+    }
+    .is-id      { font-size: 22pt; font-weight: 700; color: #1a3a5c; line-height: 1; }
+    .is-type    { font-size: 8.5pt; font-weight: 600; color: #445; line-height: 1.3; }
+    .is-counter {
+      font-size: 8pt; color: #aaa;
+      border-top: 1px solid #dde2ea;
+      padding-top: 8px; width: 100%;
+    }
+    .is-counter strong { display: block; font-size: 14pt; color: #1a3a5c; font-weight: 700; }
+
+    /* ── Print button ────────────────────────────────────────────────────── */
+    .print-btn-wrap { text-align: center; margin: 12px 0; }
+    .print-btn {
+      padding: 9px 28px; background: #1a3a5c; color: #fff;
+      border: none; border-radius: 5px; font-size: 10pt; cursor: pointer;
+    }
+    .print-btn:hover { background: #24527e; }
+  </style>
+</head>
+<body>
+
+<div class="print-btn-wrap no-print">
+  <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+</div>
+
+<!-- ═══════════════════════════════ DEFECT #4 ════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 1 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#4</span>
+    <span class="def-type">Dent</span>
+    <span class="def-status st-accepted">Use As Is</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane">
+      <div class="photo-id-stamp">#4</div>
+      <!-- Real report: <img src="/api/photos/file/7" /> -->
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>annotated_1741482600.jpg &nbsp;·&nbsp; Photo #7</span>
+      </div>
+    </div>
+    <div class="info-pane">
+      <div class="section-label">Measurements</div>
+      <div class="meas-grid">
+        <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">0.80 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.30 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">1.20 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">2.50 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">—</div></div>
+      </div>
+      <div class="notes-line">Notes: <span>Zone A — leading edge, 25 mm from tip</span></div>
+
+      <div class="section-label">Disposition History</div>
+      <table class="disp-table">
+        <tr class="disp-active-row">
+          <td><span class="disp-pill dp-USE_AS_IS">Use As Is</span></td>
+          <td class="disp-note-td">Accepted according to ENG-SPEC-4421 by Mehmet Erdoğan 2026-03-09</td>
+          <td class="disp-ts-td">09.03.2026 14:32</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #4 &nbsp;·&nbsp; Page 2 of 6</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ DEFECT #5 ════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 2 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#5</span>
+    <span class="def-type">Excess of Material</span>
+    <span class="def-status st-accepted">Use As Is</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane">
+      <div class="photo-id-stamp">#5</div>
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>annotated_1741482700.jpg &nbsp;·&nbsp; Photo #8</span>
+      </div>
+    </div>
+    <div class="info-pane">
+      <div class="section-label">Measurements</div>
+      <div class="meas-grid">
+        <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">0.10 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.20 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">—</div></div>
+      </div>
+      <div class="notes-line">Notes: <span>Flange area, weld edge</span></div>
+
+      <div class="section-label">Disposition History (full audit trail)</div>
+      <table class="disp-table">
+        <tr>
+          <td><span class="disp-pill dp-REWORK">Rework</span></td>
+          <td class="disp-note-td">After Rework Conforms dispositioned by Ahmet Yılmaz re-inspected by Ali Kaya 2026-03-08</td>
+          <td class="disp-ts-td">08.03.2026 09:15</td>
+        </tr>
+        <tr class="disp-active-row">
+          <td><span class="disp-pill dp-USE_AS_IS">Use As Is</span></td>
+          <td class="disp-note-td">Accepted according to ENG-SPEC-1102 by Ahmet Yılmaz 2026-03-09</td>
+          <td class="disp-ts-td">09.03.2026 10:44</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #5 &nbsp;·&nbsp; Page 3 of 6</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ DEFECT #6 ════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 3 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#6</span>
+    <span class="def-type">Scratch</span>
+    <span class="def-status st-mrb">MRB — CTP</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane">
+      <div class="photo-id-stamp">#6</div>
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>No photo attached</span>
+      </div>
+    </div>
+    <div class="info-pane">
+      <div class="section-label">Measurements</div>
+      <div class="meas-grid">
+        <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">0.05 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.10 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">4.50 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">Metallic</div></div>
+      </div>
+
+      <div class="section-label">Disposition History</div>
+      <table class="disp-table">
+        <tr>
+          <td><span class="disp-pill dp-MRB_SUBMITTED">MRB Submitted</span></td>
+          <td class="disp-note-td">Submitted to MRB by Ali Kaya 2026-03-08</td>
+          <td class="disp-ts-td">08.03.2026 11:00</td>
+        </tr>
+        <tr class="disp-active-row">
+          <td><span class="disp-pill dp-MRB_CTP">MRB — CTP</span></td>
+          <td class="disp-note-td">Case Technical Position reviewed — CTP-2026-007 2026-03-09</td>
+          <td class="disp-ts-td">09.03.2026 13:20</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #6 &nbsp;·&nbsp; Page 4 of 6</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ DEFECT #7 ════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 4 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#7</span>
+    <span class="def-type">Nick</span>
+    <span class="def-status st-accepted">MRB Accepted</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane">
+      <div class="photo-id-stamp">#7</div>
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>annotated_1741482800.jpg &nbsp;·&nbsp; Photo #9</span>
+      </div>
+    </div>
+    <div class="info-pane">
+      <div class="section-label">Measurements</div>
+      <div class="meas-grid">
+        <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">0.15 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.10 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">0.80 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">0.50 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">—</div></div>
+      </div>
+
+      <div class="section-label">Disposition History</div>
+      <table class="disp-table">
+        <tr>
+          <td><span class="disp-pill dp-MRB_SUBMITTED">MRB Submitted</span></td>
+          <td class="disp-note-td">Submitted to MRB by Ali Kaya 2026-03-07</td>
+          <td class="disp-ts-td">07.03.2026 10:00</td>
+        </tr>
+        <tr>
+          <td><span class="disp-pill dp-MRB_CTP">MRB — CTP</span></td>
+          <td class="disp-note-td">Case Technical Position reviewed — CTP-2026-005 2026-03-08</td>
+          <td class="disp-ts-td">08.03.2026 14:30</td>
+        </tr>
+        <tr class="disp-active-row">
+          <td><span class="disp-pill dp-MRB_ACCEPTED">MRB Accepted</span></td>
+          <td class="disp-note-td">Accepted by MRB MRB-2026-004 2026-03-09</td>
+          <td class="disp-ts-td">09.03.2026 16:05</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #7 &nbsp;·&nbsp; Page 5 of 6</span>
+  </div>
+</div>
+
+
+<!-- ══════════════════ DEFECT #8 — PAGE 1/5 (full layout) ═══════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 5 of 5 &nbsp;·&nbsp; Photo 1 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#8</span>
+    <span class="def-type">Burrs</span>
+    <span class="def-status st-pending">Pending</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane">
+      <div class="photo-id-stamp">#8 · 1/5</div>
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>annotated_burr_zone_a.jpg &nbsp;·&nbsp; Photo #10</span>
+      </div>
+    </div>
+    <div class="info-pane">
+      <div class="section-label">Measurements</div>
+      <div class="meas-grid">
+        <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.50 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">2.10 mm</div></div>
+        <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+        <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">—</div></div>
+      </div>
+      <div class="notes-line">Notes: <span>Multiple burr locations — see photos 1–5</span></div>
+
+      <div class="section-label">Disposition History</div>
+      <table class="disp-table">
+        <tr class="disp-active-row">
+          <td><span class="disp-pill dp-PENDING">Pending</span></td>
+          <td class="disp-note-td">Awaiting engineer review</td>
+          <td class="disp-ts-td">—</td>
+        </tr>
+      </table>
+
+      <div class="section-label" style="margin-top:10px;">Photos</div>
+      <p style="font-size:7.5pt;color:#888;line-height:1.5;">
+        5 annotated photos attached to this defect.<br/>
+        Each photo shows a separate burr location on the part.<br/>
+        See pages 6–9 for full-size views.
+      </p>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #8 &nbsp;·&nbsp; Page 6 of 10 &nbsp;·&nbsp; Photo 1 of 5</span>
+  </div>
+</div>
+
+<!-- ══════════════════ DEFECT #8 — PAGE 2/5 (photo only) ═══════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 5 of 5 &nbsp;·&nbsp; Photo 2 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#8</span>
+    <span class="def-type">Burrs</span>
+    <span class="def-status st-pending">Pending</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane-wide">
+      <div class="photo-id-stamp">#8 · 2/5</div>
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>annotated_burr_zone_b.jpg &nbsp;·&nbsp; Photo #11</span>
+      </div>
+    </div>
+    <div class="info-strip">
+      <div class="is-id">#8</div>
+      <div class="is-type">Burrs</div>
+      <div class="is-counter">
+        Photo<strong>2/5</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #8 &nbsp;·&nbsp; Page 7 of 10 &nbsp;·&nbsp; Photo 2 of 5</span>
+  </div>
+</div>
+
+<!-- ══════════════════ DEFECT #8 — PAGE 3/5 (photo only) ═══════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 5 of 5 &nbsp;·&nbsp; Photo 3 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#8</span>
+    <span class="def-type">Burrs</span>
+    <span class="def-status st-pending">Pending</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane-wide">
+      <div class="photo-id-stamp">#8 · 3/5</div>
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>annotated_burr_zone_c.jpg &nbsp;·&nbsp; Photo #12</span>
+      </div>
+    </div>
+    <div class="info-strip">
+      <div class="is-id">#8</div>
+      <div class="is-type">Burrs</div>
+      <div class="is-counter">
+        Photo<strong>3/5</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #8 &nbsp;·&nbsp; Page 8 of 10 &nbsp;·&nbsp; Photo 3 of 5</span>
+  </div>
+</div>
+
+<!-- ══════════════════ DEFECT #8 — PAGE 4/5 (photo only) ═══════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 5 of 5 &nbsp;·&nbsp; Photo 4 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#8</span>
+    <span class="def-type">Burrs</span>
+    <span class="def-status st-pending">Pending</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane-wide">
+      <div class="photo-id-stamp">#8 · 4/5</div>
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>annotated_burr_zone_d.jpg &nbsp;·&nbsp; Photo #13</span>
+      </div>
+    </div>
+    <div class="info-strip">
+      <div class="is-id">#8</div>
+      <div class="is-type">Burrs</div>
+      <div class="is-counter">
+        Photo<strong>4/5</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #8 &nbsp;·&nbsp; Page 9 of 10 &nbsp;·&nbsp; Photo 4 of 5</span>
+  </div>
+</div>
+
+<!-- ══════════════════ DEFECT #8 — PAGE 5/5 (photo only) ═══════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-brand">⚙ QualityCtrl</div>
+        <div class="hdr-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-part-info">
+      <div class="hdr-item"><span class="hi-label">Report</span><span class="hi-val">INS-2026-0014</span></div>
+      <div class="hdr-item"><span class="hi-label">Project</span><span class="hi-val">TS1400</span></div>
+      <div class="hdr-item"><span class="hi-label">Part No</span><span class="hi-val">PN-1400-0042</span></div>
+      <div class="hdr-item"><span class="hi-label">Serial No</span><span class="hi-val">SN-2026-00187</span></div>
+      <div class="hdr-item"><span class="hi-label">Operation</span><span class="hi-val">OP-030</span></div>
+      <div class="hdr-item"><span class="hi-label">Inspector</span><span class="hi-val">Ali Kaya</span></div>
+      <div class="hdr-item"><span class="hi-label">Date</span><span class="hi-val">09.03.2026</span></div>
+    </div>
+    <div class="hdr-right">Defect 5 of 5 &nbsp;·&nbsp; Photo 5 of 5</div>
+  </div>
+
+  <div class="defect-bar">
+    <span class="def-id">#8</span>
+    <span class="def-type">Burrs</span>
+    <span class="def-status st-pending">Pending</span>
+  </div>
+
+  <div class="page-body">
+    <div class="photo-pane-wide">
+      <div class="photo-id-stamp">#8 · 5/5</div>
+      <div class="photo-placeholder">
+        <span class="ph-icon">📷</span>
+        <span>annotated_burr_zone_e.jpg &nbsp;·&nbsp; Photo #14</span>
+      </div>
+    </div>
+    <div class="info-strip">
+      <div class="is-id">#8</div>
+      <div class="is-type">Burrs</div>
+      <div class="is-counter">
+        Photo<strong>5/5</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 / TS1400 / PN-1400-0042 / SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Defect #8 &nbsp;·&nbsp; Page 10 of 10 &nbsp;·&nbsp; Photo 5 of 5</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inspection Report — Sample Template</title>
+  <style>
+    /* ── Reset ───────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      color: #1a1a1a;
+      background: #d0d0d0;
+    }
+
+    /* ── Page simulation (screen preview) ───────────────────────────────── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      background: #fff;
+      margin: 16px auto;
+      padding: 14mm 16mm 22mm 16mm;
+      position: relative;
+      box-shadow: 0 3px 16px rgba(0,0,0,.2);
+    }
+
+    /* ── Print ───────────────────────────────────────────────────────────── */
+    @media print {
+      body { background: #fff; }
+      .page {
+        width: 100%;
+        min-height: 0;
+        margin: 0;
+        padding: 14mm 16mm 22mm 16mm;
+        box-shadow: none;
+        page-break-after: always;
+      }
+      .page:last-child { page-break-after: auto; }
+      .no-print { display: none !important; }
+    }
+
+    @page { size: A4; margin: 0; }
+
+    /* ── Page header (repeats every page) ───────────────────────────────── */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2.5px solid #1a3a5c;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .hdr-left { display: flex; align-items: center; gap: 9px; }
+    .hdr-logo-box {
+      width: 38px; height: 38px;
+      background: #1a3a5c; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: #fff;
+    }
+    .hdr-brand-name { font-size: 13pt; font-weight: 700; color: #1a3a5c; line-height: 1.1; }
+    .hdr-brand-sub  { font-size: 7pt; color: #777; letter-spacing: .06em; text-transform: uppercase; }
+    .hdr-right { text-align: right; }
+    .hdr-doc-title  { font-size: 12pt; font-weight: 700; color: #1a3a5c; text-transform: uppercase; letter-spacing: .04em; }
+    .hdr-doc-number { font-size: 7.5pt; color: #888; margin-top: 2px; }
+
+    /* ── Section title ───────────────────────────────────────────────────── */
+    .section-title {
+      font-size: 8.5pt; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: #1a3a5c;
+      border-bottom: 1px solid #1a3a5c;
+      padding-bottom: 3px;
+      margin: 14px 0 9px;
+    }
+
+    /* ── Part information table ──────────────────────────────────────────── */
+    .info-table {
+      width: 100%; border-collapse: collapse; font-size: 9pt;
+    }
+    .info-table th, .info-table td {
+      border: 1px solid #c8cdd4; padding: 5px 8px;
+    }
+    .info-table th {
+      background: #1a3a5c; color: #fff;
+      font-size: 7.5pt; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+      width: 22%;
+    }
+    .info-table tr:nth-child(even) td { background: #f4f7fb; }
+    .info-table td { font-weight: 600; }
+
+    /* ── Status badge ────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block; padding: 2px 9px; border-radius: 3px;
+      font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .badge-open      { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+    .badge-completed { background: #d4edda; color: #155724; border: 1px solid #28a745; }
+    .badge-rejected  { background: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+
+    /* ── Summary boxes ───────────────────────────────────────────────────── */
+    .summary-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+      margin-bottom: 14px;
+    }
+    .sum-box {
+      border: 1px solid #dde2ea; border-radius: 5px;
+      padding: 9px 8px; text-align: center;
+    }
+    .sum-box .val { font-size: 22pt; font-weight: 700; color: #1a3a5c; line-height: 1; }
+    .sum-box .lbl { font-size: 7pt; color: #777; text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+    .sum-box.warn  { border-color: #ffc107; }
+    .sum-box.warn  .val { color: #856404; }
+    .sum-box.ok    { border-color: #28a745; }
+    .sum-box.ok    .val { color: #155724; }
+
+    /* ── Pareto chart ────────────────────────────────────────────────────── */
+    .pareto-wrap { margin: 6px 0 14px; }
+    .pareto-caption { font-size: 8pt; color: #666; margin-bottom: 6px; }
+    svg.pareto-svg { display: block; width: 100%; }
+
+    /* ── Defect card ─────────────────────────────────────────────────────── */
+    .defect-card {
+      border: 1px solid #c8cdd4; border-radius: 5px;
+      margin-bottom: 14px; overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .dc-header {
+      background: #1a3a5c; color: #fff;
+      display: flex; align-items: center; gap: 10px;
+      padding: 5px 12px;
+    }
+    .dc-id   { font-size: 11pt; font-weight: 700; }
+    .dc-type { font-size: 10pt; flex: 1; }
+    .sev-badge {
+      font-size: 7pt; padding: 2px 8px; border-radius: 3px;
+      font-weight: 700; text-transform: uppercase;
+    }
+    .sev-low      { background: #6c757d; color: #fff; }
+    .sev-medium   { background: #fd7e14; color: #fff; }
+    .sev-high     { background: #dc3545; color: #fff; }
+    .sev-critical { background: #6f0000; color: #fff; }
+
+    /* Defect card body — stacked: measurements row on top, photo full width below */
+    .dc-body { display: flex; flex-direction: column; }
+
+    .dc-measurements {
+      padding: 7px 12px;
+      border-bottom: 1px solid #dde2ea;
+    }
+
+    /* Measurements as a compact 6-column horizontal grid */
+    .meas-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0;
+    }
+    .meas-cell { padding: 3px 6px; border-right: 1px solid #eef0f3; }
+    .meas-cell:last-child { border-right: none; }
+    .meas-cell .mc-label { font-size: 6.5pt; color: #999; text-transform: uppercase; letter-spacing: .04em; }
+    .meas-cell .mc-val   { font-size: 9pt; font-weight: 700; color: #1a1a1a; margin-top: 1px; }
+
+    /* Notes row below measurements if present */
+    .meas-notes {
+      font-size: 8pt; color: #666;
+      padding: 4px 6px 2px;
+      border-top: 1px solid #f0f0f0;
+      margin-top: 4px;
+    }
+    .meas-notes span { font-weight: 600; color: #444; }
+
+    /* Photo — full width, tall */
+    .dc-photo {
+      padding: 10px 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: #f6f8fb;
+      min-height: 180px;
+    }
+    .dc-photo img {
+      max-width: 100%; max-height: 200px;
+      object-fit: contain;
+      border: 1px solid #dde2ea; border-radius: 3px;
+    }
+    .photo-placeholder {
+      width: 100%; height: 160px;
+      background: #eef1f5; border: 1.5px dashed #b0b8c4; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      color: #a0a8b4; font-size: 8.5pt; flex-direction: column; gap: 6px;
+    }
+    .photo-placeholder .ph-icon { font-size: 22pt; }
+
+    /* ── Disposition section ─────────────────────────────────────────────── */
+    .dc-disposition {
+      border-top: 1px solid #dde2ea;
+      padding: 7px 12px;
+    }
+    .disp-section-label {
+      font-size: 7pt; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: #888; margin-bottom: 4px;
+    }
+    .disp-row {
+      display: flex; align-items: baseline; gap: 8px;
+      padding: 3px 0; border-bottom: 1px solid #f4f4f4;
+      font-size: 8.5pt;
+    }
+    .disp-row:last-child { border-bottom: none; }
+    .disp-pill {
+      font-size: 7pt; font-weight: 700; padding: 2px 7px; border-radius: 3px;
+      white-space: nowrap; text-transform: uppercase;
+    }
+    .dp-USE_AS_IS { background: #d4edda; color: #155724; }
+    .dp-REWORK    { background: #cce5ff; color: #004085; }
+    .dp-MRB       { background: #e2d9f3; color: #4a235a; }
+    .dp-VOID      { background: #e2e3e5; color: #383d41; }
+    .dp-REPAIR    { background: #fff3cd; color: #856404; }
+    .dp-SCRAP     { background: #f8d7da; color: #721c24; }
+    .dp-PENDING   { background: #fff3cd; color: #856404; }
+    .disp-note { flex: 1; color: #444; }
+    .disp-ts   { font-size: 7.5pt; color: #aaa; white-space: nowrap; }
+
+
+    /* ── Notes box ───────────────────────────────────────────────────────── */
+    .notes-box {
+      border: 1px solid #dde2ea; border-radius: 4px;
+      padding: 9px 12px; min-height: 44px; margin-top: 10px;
+    }
+    .notes-box p { font-size: 8.5pt; color: #555; line-height: 1.55; }
+
+    /* ── Page footer ─────────────────────────────────────────────────────── */
+    .page-footer {
+      position: absolute; bottom: 8mm; left: 16mm; right: 16mm;
+      border-top: 1px solid #ccc; padding-top: 4px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 7.5pt; color: #aaa;
+    }
+    .footer-confidential { color: #c00; font-weight: 700; font-size: 7pt; text-transform: uppercase; letter-spacing: .05em; }
+
+    /* ── Print button (screen only) ──────────────────────────────────────── */
+    .print-btn-wrap {
+      text-align: center; margin: 12px 0;
+    }
+    .print-btn {
+      padding: 9px 28px; background: #1a3a5c; color: #fff;
+      border: none; border-radius: 5px; font-size: 10pt;
+      cursor: pointer; letter-spacing: .03em;
+    }
+    .print-btn:hover { background: #24527e; }
+  </style>
+</head>
+<body>
+
+<div class="print-btn-wrap no-print">
+  <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+</div>
+
+<!-- ═══════════════════════════════════════ PAGE 1 — COVER ══════════════════ -->
+<div class="page">
+
+  <div class="page-header">
+    <div class="hdr-left">
+      <div class="hdr-logo-box">⚙</div>
+      <div>
+        <div class="hdr-brand-name">QualityCtrl</div>
+        <div class="hdr-brand-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-doc-title">Inspection Report</div>
+      <div class="hdr-doc-number">Report No: INS-2026-0014 &nbsp;|&nbsp; Rev: 00 &nbsp;|&nbsp; AS9100 Clause 8.7</div>
+    </div>
+  </div>
+
+  <!-- Part Information -->
+  <div class="section-title">Part Information</div>
+  <table class="info-table">
+    <tr>
+      <th>Engine Project</th>
+      <td>TS1400</td>
+      <th>Report No</th>
+      <td>INS-2026-0014</td>
+    </tr>
+    <tr>
+      <th>Part Number</th>
+      <td>PN-1400-0042</td>
+      <th>Inspection Date</th>
+      <td>09.03.2026</td>
+    </tr>
+    <tr>
+      <th>Serial Number</th>
+      <td>SN-2026-00187</td>
+      <th>Inspector</th>
+      <td>Ali Kaya</td>
+    </tr>
+    <tr>
+      <th>Operation No</th>
+      <td>OP-030 — Final Visual Inspection</td>
+      <th>Status</th>
+      <td><span class="badge badge-open">Open</span></td>
+    </tr>
+    <tr>
+      <th>Notes</th>
+      <td colspan="3">First inspection. Engineer review pending. Dispositions will be entered after hardcopy router sign-off.</td>
+    </tr>
+  </table>
+
+  <!-- Summary -->
+  <div class="section-title">Summary</div>
+  <div class="summary-row">
+    <div class="sum-box">
+      <div class="val">5</div>
+      <div class="lbl">Total Defects</div>
+    </div>
+    <div class="sum-box warn">
+      <div class="val">3</div>
+      <div class="lbl">Pending</div>
+    </div>
+    <div class="sum-box ok">
+      <div class="val">2</div>
+      <div class="lbl">Neutralized</div>
+    </div>
+    <div class="sum-box">
+      <div class="val">4</div>
+      <div class="lbl">Photos</div>
+    </div>
+  </div>
+
+  <!-- Pareto Chart -->
+  <div class="section-title">Defect Pareto — by Type</div>
+  <div class="pareto-wrap">
+    <div class="pareto-caption">
+      Defect count per type (bars, left axis) &amp; cumulative percentage (line, right axis)
+    </div>
+    <!--
+      Data: Dent×2, Scratch×1, Nick×1, Burrs×1  — total 5
+      Bar height mapping: max count=2 → 100px bar in 120px chart area
+      y_bar = chart_bottom - (count/max_count)*chart_height
+      chart area: y=20..140 (height=120), x=60..490 (5 bars, width=54 each, gap=12)
+      Cumulative%: 2/5=40%, 3/5=60%, 4/5=80%, 5/5=100%
+      y_pct = 140 - (pct/100)*120
+    -->
+    <svg class="pareto-svg" viewBox="0 0 560 210" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background -->
+      <rect x="0" y="0" width="560" height="210" fill="#fafbfc" rx="4"/>
+
+      <!-- Grid lines (left axis ticks 0..4, mapped to y=140..20, step=30) -->
+      <line x1="60" y1="140" x2="490" y2="140" stroke="#d0d5dd" stroke-width="1"/>
+      <line x1="60" y1="110" x2="490" y2="110" stroke="#e8eaed" stroke-width=".8" stroke-dasharray="3,3"/>
+      <line x1="60" y1="80"  x2="490" y2="80"  stroke="#e8eaed" stroke-width=".8" stroke-dasharray="3,3"/>
+      <line x1="60" y1="50"  x2="490" y2="50"  stroke="#e8eaed" stroke-width=".8" stroke-dasharray="3,3"/>
+      <line x1="60" y1="20"  x2="490" y2="20"  stroke="#e8eaed" stroke-width=".8" stroke-dasharray="3,3"/>
+
+      <!-- Axes -->
+      <line x1="60" y1="20" x2="60" y2="140" stroke="#c0c5cc" stroke-width="1"/>
+
+      <!-- Left Y-axis labels (count) -->
+      <text x="54" y="143" text-anchor="end" font-size="8.5" fill="#888">0</text>
+      <text x="54" y="113" text-anchor="end" font-size="8.5" fill="#888">1</text>
+      <text x="54" y="83"  text-anchor="end" font-size="8.5" fill="#888">2</text>
+      <text x="54" y="53"  text-anchor="end" font-size="8.5" fill="#888">3</text>
+      <text x="54" y="23"  text-anchor="end" font-size="8.5" fill="#888">4</text>
+      <text x="16" y="85"  text-anchor="middle" font-size="8" fill="#aaa"
+            transform="rotate(-90 16 85)">Count</text>
+
+      <!-- Right Y-axis labels (%) -->
+      <text x="496" y="143" text-anchor="start" font-size="8.5" fill="#c0392b">0%</text>
+      <text x="496" y="113" text-anchor="start" font-size="8.5" fill="#c0392b">25%</text>
+      <text x="496" y="83"  text-anchor="start" font-size="8.5" fill="#c0392b">50%</text>
+      <text x="496" y="53"  text-anchor="start" font-size="8.5" fill="#c0392b">75%</text>
+      <text x="496" y="23"  text-anchor="start" font-size="8.5" fill="#c0392b">100%</text>
+      <text x="544" y="85"  text-anchor="middle" font-size="8" fill="#c0392b"
+            transform="rotate(90 544 85)">Cumul. %</text>
+
+      <!--
+        Bar positions (center x): Dent=113, Scratch=197, Nick=281, Burrs=365, (space=84)
+        Bar width=60
+        Dent(2):  y=80,  h=60
+        Scratch(1): y=110, h=30
+        Nick(1):    y=110, h=30
+        Burrs(1):   y=110, h=30
+      -->
+      <!-- Dent bar -->
+      <rect x="83"  y="80"  width="60" height="60" fill="#1a3a5c" rx="2"/>
+      <text x="113" y="76"  text-anchor="middle" font-size="9" fill="#1a3a5c" font-weight="700">2</text>
+      <text x="113" y="157" text-anchor="middle" font-size="8.5" fill="#444">Dent</text>
+
+      <!-- Scratch bar -->
+      <rect x="167" y="110" width="60" height="30" fill="#2e6da4" rx="2"/>
+      <text x="197" y="106" text-anchor="middle" font-size="9" fill="#2e6da4" font-weight="700">1</text>
+      <text x="197" y="157" text-anchor="middle" font-size="8.5" fill="#444">Scratch</text>
+
+      <!-- Nick bar -->
+      <rect x="251" y="110" width="60" height="30" fill="#4a90d9" rx="2"/>
+      <text x="281" y="106" text-anchor="middle" font-size="9" fill="#4a90d9" font-weight="700">1</text>
+      <text x="281" y="157" text-anchor="middle" font-size="8.5" fill="#444">Nick</text>
+
+      <!-- Burrs bar -->
+      <rect x="335" y="110" width="60" height="30" fill="#7db8e8" rx="2"/>
+      <text x="365" y="106" text-anchor="middle" font-size="9" fill="#7db8e8" font-weight="700">1</text>
+      <text x="365" y="157" text-anchor="middle" font-size="8.5" fill="#444">Burrs</text>
+
+      <!--
+        Cumulative % line points (center x of each bar, y = 140 - pct*1.2):
+        After Dent(40%):    y = 140 - 48  = 92
+        After Scratch(60%): y = 140 - 72  = 68
+        After Nick(80%):    y = 140 - 96  = 44
+        After Burrs(100%):  y = 140 - 120 = 20
+        Start from 0 at x=60: y=140
+      -->
+      <polyline
+        points="60,140  113,92  197,68  281,44  365,20"
+        fill="none" stroke="#c0392b" stroke-width="1.8"/>
+      <circle cx="113" cy="92" r="3.5" fill="#c0392b"/>
+      <circle cx="197" cy="68" r="3.5" fill="#c0392b"/>
+      <circle cx="281" cy="44" r="3.5" fill="#c0392b"/>
+      <circle cx="365" cy="20" r="3.5" fill="#c0392b"/>
+
+      <!-- % labels on line -->
+      <text x="117" y="89"  font-size="7.5" fill="#c0392b">40%</text>
+      <text x="201" y="65"  font-size="7.5" fill="#c0392b">60%</text>
+      <text x="285" y="41"  font-size="7.5" fill="#c0392b">80%</text>
+      <text x="369" y="17"  font-size="7.5" fill="#c0392b">100%</text>
+
+      <!-- Legend -->
+      <rect x="65"  y="175" width="12" height="10" fill="#1a3a5c" rx="1"/>
+      <text x="81"  y="184" font-size="7.5" fill="#555">Defect Count</text>
+      <line x1="150" y1="180" x2="172" y2="180" stroke="#c0392b" stroke-width="1.8"/>
+      <circle cx="161" cy="180" r="3" fill="#c0392b"/>
+      <text x="176"  y="184" font-size="7.5" fill="#555">Cumulative %</text>
+    </svg>
+  </div>
+
+  <!-- Notes -->
+  <div class="section-title">Notes</div>
+  <div class="notes-box">
+    <p>
+      Initial inspection report generated before engineer review. Disposition decisions will be
+      entered into the system by the inspector after the engineer has reviewed the hardcopy router
+      and recorded decisions on it. This report will be reprinted following disposition entry.
+    </p>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 &nbsp;/&nbsp; TS1400 &nbsp;/&nbsp; PN-1400-0042 &nbsp;/&nbsp; SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Page 1 of 3</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════ PAGE 2 — DEFECTS ════════════════════ -->
+<div class="page">
+
+  <div class="page-header">
+    <div class="hdr-left">
+      <div class="hdr-logo-box">⚙</div>
+      <div>
+        <div class="hdr-brand-name">QualityCtrl</div>
+        <div class="hdr-brand-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-doc-title">Defect Records &amp; Disposition History</div>
+      <div class="hdr-doc-number">INS-2026-0014 &nbsp;|&nbsp; PN-1400-0042 &nbsp;/&nbsp; SN-2026-00187</div>
+    </div>
+  </div>
+
+  <div class="section-title">Defect Records</div>
+
+  <!-- ─── Defect #4 — USE AS IS ─── -->
+  <div class="defect-card">
+    <div class="dc-header">
+      <span class="dc-id">#4</span>
+      <span class="dc-type">Dent</span>
+      <span class="sev-badge sev-medium">Medium</span>
+    </div>
+    <div class="dc-body">
+      <div class="dc-measurements">
+        <div class="meas-grid">
+          <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">0.80 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.30 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">1.20 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">2.50 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">—</div></div>
+        </div>
+        <div class="meas-notes">Notes: <span>Zone A — leading edge, 25 mm from tip</span></div>
+      </div>
+      <div class="dc-photo">
+        <div class="photo-placeholder">
+          <span class="ph-icon">📷</span>
+          <span>annotated_1741482600.jpg &nbsp;·&nbsp; Photo #7</span>
+        </div>
+      </div>
+    </div>
+    <div class="dc-disposition">
+      <div class="disp-section-label">Disposition History</div>
+      <div class="disp-row">
+        <span class="disp-pill dp-USE_AS_IS">Use As Is</span>
+        <span class="disp-note">Accepted according to ENG-SPEC-4421 by Mehmet Erdoğan 2026-03-09</span>
+        <span class="disp-ts">09.03.2026&nbsp;14:32</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Defect #5 — REWORK then USE AS IS ─── -->
+  <div class="defect-card">
+    <div class="dc-header">
+      <span class="dc-id">#5</span>
+      <span class="dc-type">Excess of Material</span>
+      <span class="sev-badge sev-medium">Medium</span>
+    </div>
+    <div class="dc-body">
+      <div class="dc-measurements">
+        <div class="meas-grid">
+          <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">0.10 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.20 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">—</div></div>
+        </div>
+        <div class="meas-notes">Notes: <span>Flange area, weld edge</span></div>
+      </div>
+      <div class="dc-photo">
+        <div class="photo-placeholder">
+          <span class="ph-icon">📷</span>
+          <span>annotated_1741482700.jpg &nbsp;·&nbsp; Photo #8</span>
+        </div>
+      </div>
+    </div>
+    <div class="dc-disposition">
+      <div class="disp-section-label">Disposition History</div>
+      <div class="disp-row">
+        <span class="disp-pill dp-REWORK">Rework</span>
+        <span class="disp-note">After Rework Conforms dispositioned by Ahmet Yılmaz re-inspected by Ali Kaya 2026-03-08</span>
+        <span class="disp-ts">08.03.2026&nbsp;09:15</span>
+      </div>
+      <div class="disp-row">
+        <span class="disp-pill dp-USE_AS_IS">Use As Is</span>
+        <span class="disp-note">Accepted according to ENG-SPEC-1102 by Ahmet Yılmaz 2026-03-09</span>
+        <span class="disp-ts">09.03.2026&nbsp;10:44</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Defect #6 — PENDING ─── -->
+  <div class="defect-card">
+    <div class="dc-header">
+      <span class="dc-id">#6</span>
+      <span class="dc-type">Scratch</span>
+      <span class="sev-badge sev-low">Low</span>
+    </div>
+    <div class="dc-body">
+      <div class="dc-measurements">
+        <div class="meas-grid">
+          <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">0.05 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.10 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">4.50 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">Metallic</div></div>
+        </div>
+      </div>
+      <div class="dc-photo">
+        <div class="photo-placeholder">
+          <span class="ph-icon">📷</span>
+          <span>No photo attached</span>
+        </div>
+      </div>
+    </div>
+    <div class="dc-disposition">
+      <div class="disp-section-label">Disposition History</div>
+      <div class="disp-row">
+        <span class="disp-pill dp-PENDING">Pending</span>
+        <span class="disp-note">Awaiting engineer review</span>
+        <span class="disp-ts">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 &nbsp;/&nbsp; TS1400 &nbsp;/&nbsp; PN-1400-0042 &nbsp;/&nbsp; SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Page 2 of 3</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════ PAGE 3 — MORE DEFECTS + SIGNATURES ══════════ -->
+<div class="page">
+
+  <div class="page-header">
+    <div class="hdr-left">
+      <div class="hdr-logo-box">⚙</div>
+      <div>
+        <div class="hdr-brand-name">QualityCtrl</div>
+        <div class="hdr-brand-sub">Inspection Management System</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-doc-title">Defect Records &amp; Disposition History</div>
+      <div class="hdr-doc-number">INS-2026-0014 &nbsp;|&nbsp; PN-1400-0042 &nbsp;/&nbsp; SN-2026-00187</div>
+    </div>
+  </div>
+
+  <div class="section-title">Defect Records (continued)</div>
+
+  <!-- ─── Defect #7 — MRB ─── -->
+  <div class="defect-card">
+    <div class="dc-header">
+      <span class="dc-id">#7</span>
+      <span class="dc-type">Nick</span>
+      <span class="sev-badge sev-low">Low</span>
+    </div>
+    <div class="dc-body">
+      <div class="dc-measurements">
+        <div class="meas-grid">
+          <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">0.15 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.10 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">0.80 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">0.50 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">—</div></div>
+        </div>
+      </div>
+      <div class="dc-photo">
+        <div class="photo-placeholder">
+          <span class="ph-icon">📷</span>
+          <span>annotated_1741482800.jpg &nbsp;·&nbsp; Photo #9</span>
+        </div>
+      </div>
+    </div>
+    <div class="dc-disposition">
+      <div class="disp-section-label">Disposition History</div>
+      <div class="disp-row">
+        <span class="disp-pill dp-MRB">MRB</span>
+        <span class="disp-note">Accepted by MRB MRB-2026-004 2026-03-09</span>
+        <span class="disp-ts">09.03.2026&nbsp;16:05</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Defect #8 — SCRAP ─── -->
+  <div class="defect-card">
+    <div class="dc-header">
+      <span class="dc-id">#8</span>
+      <span class="dc-type">Burrs</span>
+      <span class="sev-badge sev-low">Low</span>
+    </div>
+    <div class="dc-body">
+      <div class="dc-measurements">
+        <div class="meas-grid">
+          <div class="meas-cell"><div class="mc-label">Depth</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Width</div><div class="mc-val">0.50 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Length</div><div class="mc-val">2.10 mm</div></div>
+          <div class="meas-cell"><div class="mc-label">Radius</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Angle</div><div class="mc-val">—</div></div>
+          <div class="meas-cell"><div class="mc-label">Color</div><div class="mc-val">—</div></div>
+        </div>
+      </div>
+      <div class="dc-photo">
+        <div class="photo-placeholder">
+          <span class="ph-icon">📷</span>
+          <span>No photo attached</span>
+        </div>
+      </div>
+    </div>
+    <div class="dc-disposition">
+      <div class="disp-section-label">Disposition History</div>
+      <div class="disp-row">
+        <span class="disp-pill dp-SCRAP">Scrap</span>
+        <span class="disp-note">Scrapped by Ali Kaya 2026-03-09 — Exceeds rework limits, part cannot be brought to conformance</span>
+        <span class="disp-ts">09.03.2026&nbsp;16:40</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>INS-2026-0014 &nbsp;/&nbsp; TS1400 &nbsp;/&nbsp; PN-1400-0042 &nbsp;/&nbsp; SN-2026-00187</span>
+    <span class="footer-confidential">Confidential — Internal Use Only</span>
+    <span>Page 3 of 3</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,4 @@
+{
+  "_comment": "shared_dir: Ağ paylaşım klasörünün tam yolunu girin. Örnek: \\\\SUNUCU\\Paylasim\\QualityCtrl  |  null ise yerel klasörler kullanılır.",
+  "shared_dir": null
+}
